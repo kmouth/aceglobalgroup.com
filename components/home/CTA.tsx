@@ -1,134 +1,62 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  Users,
-  Globe2,
-  Leaf,
-  Truck,
-} from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Handshake } from "lucide-react";
 
-import Container from "../ui/Container";
-import SectionTitle from "../ui/SectionTitle";
-import Button from "../ui/Button";
-
-const impact = [
-  {
-    icon: Users,
-    number: "100+",
-    title: "Business Relationships",
-  },
-  {
-    icon: Globe2,
-    number: "5",
-    title: "Core Business Divisions",
-  },
-  {
-    icon: Truck,
-    number: "24/7",
-    title: "Operational Support",
-  },
-  {
-    icon: Leaf,
-    number: "100%",
-    title: "Commitment to Sustainability",
-  },
-];
+import Container from "@/components/ui/Container";
 
 export default function CTA() {
   return (
-    <section className="bg-gradient-to-r from-green-900 via-green-800 to-green-700 py-24 text-white">
+    <section className="relative overflow-hidden bg-slate-950 py-32 text-white">
+      {/* Background Accent */}
+      <div className="absolute inset-0">
+        <div className="absolute left-0 top-0 h-96 w-96 rounded-full bg-emerald-500/20 blur-3xl" />
+        <div className="absolute bottom-0 right-0 h-[420px] w-[420px] rounded-full bg-emerald-400/10 blur-3xl" />
+      </div>
 
       <Container>
-
-        <SectionTitle
-          eyebrow="Our Impact"
-          title="Building Africa's Future Together"
-          subtitle="ACE Global Group is committed to sustainable development, innovation and creating long-term value across every sector we serve."
-          center
-        />
-
-        <div className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-
-          {impact.map((item, index) => {
-            const Icon = item.icon;
-
-            return (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{
-                  delay: index * 0.15,
-                }}
-                viewport={{ once: true }}
-                className="rounded-3xl bg-white/10 p-8 text-center backdrop-blur-lg"
-              >
-
-                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-yellow-400 text-green-900">
-
-                  <Icon size={30} />
-
-                </div>
-
-                <h2 className="text-5xl font-extrabold">
-
-                  {item.number}
-
-                </h2>
-
-                <p className="mt-4 text-lg text-green-100">
-
-                  {item.title}
-
-                </p>
-
-              </motion.div>
-            );
-          })}
-
-        </div>
-
-        <div className="mt-20 text-center">
-
-          <h2 className="mb-6 text-4xl font-bold">
-
-            Let's Build the Future Together
-
-          </h2>
-
-          <p className="mx-auto mb-10 max-w-3xl text-xl leading-9 text-green-100">
-
-            Whether you're seeking a reliable business partner,
-            premium agricultural products, logistics expertise or
-            investment opportunities, ACE Global Group is ready
-            to help you succeed.
-
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-6">
-
-            <Button href="/contact">
-
-              Become a Partner
-
-            </Button>
-
-            <Button
-              href="/services"
-              variant="secondary"
-            >
-
-              Explore Solutions
-
-            </Button>
-
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
+          className="relative z-10 rounded-[2rem] border border-white/10 bg-white/5 p-12 text-center backdrop-blur-md lg:p-16"
+        >
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-600">
+            <Handshake size={36} />
           </div>
 
-        </div>
+          <h2 className="mt-8 text-4xl font-black md:text-5xl">
+            Let's Build Africa's Future Together
+          </h2>
 
+          <p className="mx-auto mt-8 max-w-3xl text-lg leading-9 text-slate-300">
+            Whether you're looking to invest, partner, or explore new
+            opportunities, ACE Global Group is ready to build meaningful
+            relationships that create sustainable value for businesses,
+            communities and future generations.
+          </p>
+
+          <div className="mt-12 flex flex-wrap justify-center gap-5">
+            <Link
+              href="/contact"
+              className="inline-flex items-center rounded-xl bg-emerald-600 px-8 py-4 text-lg font-semibold transition-all duration-300 hover:bg-emerald-700"
+            >
+              Partner With ACE
+
+              <ArrowRight className="ml-3 h-5 w-5" />
+            </Link>
+
+            <Link
+              href="/about"
+              className="inline-flex items-center rounded-xl border border-white/20 px-8 py-4 text-lg font-semibold transition-all duration-300 hover:bg-white hover:text-slate-900"
+            >
+              Learn More About Us
+            </Link>
+          </div>
+        </motion.div>
       </Container>
-
     </section>
   );
 }

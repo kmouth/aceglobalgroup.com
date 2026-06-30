@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { ReactNode } from "react";
 
-type ButtonProps = {
+interface ButtonProps {
   href: string;
-  children: React.ReactNode;
+  children: ReactNode;
   variant?: "primary" | "secondary";
-};
+}
 
 export default function Button({
   href,
@@ -13,13 +14,13 @@ export default function Button({
 }: ButtonProps) {
   const styles =
     variant === "primary"
-      ? "bg-green-700 text-white hover:bg-green-800"
-      : "border-2 border-green-700 text-green-700 hover:bg-green-700 hover:text-white";
+      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+      : "border border-slate-300 hover:bg-slate-100 text-slate-900";
 
   return (
     <Link
       href={href}
-      className={`inline-flex items-center rounded-xl px-8 py-4 font-semibold transition-all duration-300 hover:-translate-y-1 ${styles}`}
+      className={`inline-flex items-center justify-center rounded-xl px-6 py-3 font-semibold transition-all duration-300 hover:-translate-y-1 ${styles}`}
     >
       {children}
     </Link>

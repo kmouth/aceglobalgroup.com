@@ -35,14 +35,14 @@ export default function Navbar() {
 
   return (
     <header
-      className={clsx(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        scrolled
-          ? "bg-white shadow-lg"
-          : "bg-white/90 backdrop-blur-md"
+  className={clsx(
+    "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
+    scrolled
+      ? "bg-white/95 backdrop-blur-xl shadow-lg"
+      : "bg-transparent"
       )}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-2">
 
         {/* Brand */}
 
@@ -50,25 +50,36 @@ export default function Navbar() {
 
           <div className="leading-none">
 
-            <h1 className="text-3xl font-extrabold tracking-wide">
+            <h1 className="text-2xl font-extrabold tracking-wide">
+  <span
+    className={clsx(
+      "transition",
+      scrolled ? "text-emerald-700" : "text-white"
+    )}
+  >
+    ACE
+  </span>
 
-              <span className="text-green-800 transition group-hover:text-green-700">
-                ACE
-              </span>
-
-              <span className="text-blue-900">
-                {" "}GLOBAL
-              </span>
-
-            </h1>
+  <span
+    className={clsx(
+      scrolled ? "text-slate-900" : "text-white"
+    )}
+  >
+    {" "}GLOBAL
+  </span>
+</h1>
 
             <div className="mt-2 h-[3px] w-20 rounded-full bg-yellow-500 transition-all duration-300 group-hover:w-28"></div>
+            <p
+  className={clsx(
+    "mt-2 text-[11px] uppercase tracking-[0.35em]",
+    scrolled ? "text-slate-500" : "text-white/80"
+  )}
+>
+  Building Africa's Future
+</p>
 
-            <p className="mt-2 text-[11px] uppercase tracking-[0.35em] text-gray-500">
-
-              Building Africa's Future
-
-            </p>
+          
 
           </div>
 
@@ -76,7 +87,7 @@ export default function Navbar() {
 
         {/* Desktop Navigation */}
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center gap-10 xl:gap-12 md:flex">
 
           {navLinks.map((link) => (
 
@@ -107,7 +118,7 @@ export default function Navbar() {
 
           <Link
             href="/contact"
-            className="rounded-lg bg-green-700 px-6 py-3 font-semibold text-white transition-all duration-300 hover:-translate-y-1 hover:bg-green-800"
+            className="ml-8 rounded-xl bg-emerald-700 px-7 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-emerald-800"
           >
             Contact Us
           </Link>

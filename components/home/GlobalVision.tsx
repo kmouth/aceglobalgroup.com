@@ -2,46 +2,47 @@
 
 import { motion } from "framer-motion";
 import {
-  ShieldCheck,
-  Lightbulb,
-  Users,
-  TrendingUp,
+  Globe2,
+  Compass,
+  Rocket,
+  Landmark,
 } from "lucide-react";
 
-import SectionHeader from "@/components/ui/SectionHeader";
 import Container from "@/components/ui/Container";
+import SectionHeader from "@/components/ui/SectionHeader";
 
-const reasons = [
+const visionItems = [
   {
-    icon: ShieldCheck,
-    title: "Integrity & Trust",
+    icon: Globe2,
+    title: "Global Reach",
     description:
-      "We conduct every partnership with transparency, accountability and a commitment to ethical business practices.",
+      "Building strategic relationships that connect African opportunities with international markets.",
   },
   {
-    icon: Lightbulb,
+    icon: Compass,
+    title: "Strategic Direction",
+    description:
+      "Focused on long-term growth through innovation, diversification and responsible leadership.",
+  },
+  {
+    icon: Rocket,
     title: "Innovation",
     description:
-      "We embrace forward-thinking solutions that improve efficiency, create value and drive sustainable growth.",
+      "Continuously investing in ideas, technology and people to shape the future of enterprise.",
   },
   {
-    icon: Users,
-    title: "People-Centered",
+    icon: Landmark,
+    title: "Lasting Legacy",
     description:
-      "Our success is built on strong relationships with clients, partners, employees and the communities we serve.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Long-Term Growth",
-    description:
-      "Every investment and strategic decision is made with a focus on resilience, scalability and lasting impact.",
+      "Creating businesses that generate sustainable economic value for generations to come.",
   },
 ];
 
-export default function WhyChooseUs() {
+export default function GlobalVision() {
   return (
-    <section className="bg-white py-32">
+    <section className="bg-slate-50 py-32">
       <Container>
+
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -50,19 +51,22 @@ export default function WhyChooseUs() {
           className="mb-20"
         >
           <SectionHeader
-            eyebrow="Why Choose ACE"
-            title="A Trusted Partner for Sustainable Success"
-            description="We combine innovation, integrity and strategic thinking to deliver solutions that create lasting value for businesses, communities and future generations."
+            eyebrow="Our Vision"
+            title="Looking Beyond Today's Opportunities"
+            description="Our ambition is to build a globally respected enterprise that transforms industries, empowers communities and creates sustainable prosperity."
           />
         </motion.div>
 
         <div className="grid gap-8 md:grid-cols-2">
-          {reasons.map((reason, index) => {
-            const Icon = reason.icon;
+
+          {visionItems.map((item, index) => {
+
+            const Icon = item.icon;
 
             return (
+
               <motion.div
-                key={reason.title}
+                key={item.title}
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -70,27 +74,43 @@ export default function WhyChooseUs() {
                   delay: index * 0.1,
                   duration: 0.6,
                 }}
-                className="group rounded-3xl border border-slate-200 bg-slate-50 p-8 transition-all duration-300 hover:-translate-y-2 hover:border-emerald-300 hover:bg-white hover:shadow-xl"
+                className="group rounded-3xl border border-slate-200 bg-white p-8 transition-all duration-300 hover:-translate-y-2 hover:border-emerald-300 hover:shadow-xl"
               >
+
                 <div className="flex items-start gap-6">
+
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 transition-all duration-300 group-hover:bg-emerald-600 group-hover:text-white">
+
                     <Icon size={30} />
+
                   </div>
 
                   <div>
+
                     <h3 className="text-2xl font-bold text-slate-900">
-                      {reason.title}
+
+                      {item.title}
+
                     </h3>
 
                     <p className="mt-4 leading-8 text-slate-600">
-                      {reason.description}
+
+                      {item.description}
+
                     </p>
+
                   </div>
+
                 </div>
+
               </motion.div>
+
             );
+
           })}
+
         </div>
+
       </Container>
     </section>
   );
