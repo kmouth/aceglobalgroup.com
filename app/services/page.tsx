@@ -3,7 +3,7 @@ import Footer from "@/components/layout/Footer";
 
 import Hero from "@/components/services/Hero";
 import ServiceCards from "@/components/services/ServiceCards";
-import WhyChooseUs from "@/components/services/WhyChooseUs";
+import WhyUs from "@/components/services/WhyUs";
 
 export default function ServicesPage() {
   return (
@@ -13,8 +13,8 @@ export default function ServicesPage() {
       <main>
         <Hero />
         <ServiceCards />
+        <WhyUs />
       </main>
-      
 
       <Footer />
     </>

@@ -1,26 +1,22 @@
 export const company = {
   name: "ACE Global Group",
 
-  shortName: "ACE Global",
-
   slogan: "Building Africa's Future",
 
   description:
-    "ACE Global Group is a diversified enterprise delivering sustainable solutions across agriculture, aquaculture, logistics, processing and international trade.",
+    "ACE Global Group is a diversified company delivering sustainable solutions across agriculture, logistics, manufacturing and international trade.",
 
-  email: "info.aceglobalgroup@gmail.com",
+  address: "Rivers state, Nigeria",
 
-  phone: "+2348138857355",
+  phone: "+2349138857355",
 
-  displayPhone: "+234 813 885 7355",
+  displayPhone: "+2348138857355",
 
-  address: "Port Harcourt, Rivers State, Nigeria",
+  email: "info@aceglobalgroup.com",
 
   twitter: "https://x.com/ACEGLOBALGRP",
 
-  linkedin: "",
+  instagram: "https://www.instagram.com/aceglobalgroup",
 
-  website: "https://aceglobalgroup.com",
-
-  founded: 2026,
+  enquiryForm: "https://forms.gle/txRwQMW3qrMA6iXe7",
 };
