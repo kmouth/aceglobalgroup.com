@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function POST(request: Request) {
+async function sendQuote(
+  request: Request,
+  values: {
+    quoteId: string;
+    enquiryReference: string;
+  }
+) {
   try {
     const authClient = await createClient();
 
@@ -15,15 +21,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const formData = await request.formData();
-
-    const quoteId = String(
-      formData.get("quoteId") || ""
-    ).trim();
-
-    const enquiryReference = String(
-      formData.get("enquiryReference") || ""
-    ).trim();
+    const quoteId = values.quoteId.trim();
+    const enquiryReference = values.enquiryReference.trim();
 
     if (!quoteId || !enquiryReference) {
       return NextResponse.json(
@@ -39,6 +38,9 @@ export async function POST(request: Request) {
 
     const supabase = createAdminClient();
 
+    /*
+     * Load the quote.
+     */
     const { data: quote, error: quoteError } =
       await supabase
         .from("quotes")
@@ -75,6 +77,10 @@ export async function POST(request: Request) {
       );
     }
 
+    /*
+     * Prevent sending a quote that has already
+     * been sent or processed.
+     */
     if (quote.status !== "draft") {
       return NextResponse.redirect(
         new URL(
@@ -86,17 +92,29 @@ export async function POST(request: Request) {
       );
     }
 
+    /*
+     * Check quote expiry.
+     */
     if (
       quote.valid_until &&
       new Date(`${quote.valid_until}T23:59:59Z`) <
         new Date()
     ) {
-      await supabase
-        .from("quotes")
-        .update({
-          status: "expired",
-        })
-        .eq("id", quote.id);
+      const { error: expiryError } =
+        await supabase
+          .from("quotes")
+          .update({
+            status: "expired",
+          })
+          .eq("id", quote.id)
+          .eq("status", "draft");
+
+      if (expiryError) {
+        console.error(
+          "Quote expiry update failed:",
+          expiryError
+        );
+      }
 
       return NextResponse.redirect(
         new URL(
@@ -108,14 +126,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const { error: updateError } =
+    /*
+     * Mark quote as sent.
+     */
+    const { data: updatedQuote, error: updateError } =
       await supabase
         .from("quotes")
         .update({
           status: "sent",
         })
         .eq("id", quote.id)
-        .eq("status", "draft");
+        .eq("status", "draft")
+        .select("id, reference, status")
+        .maybeSingle();
 
     if (updateError) {
       console.error(
@@ -133,6 +156,24 @@ export async function POST(request: Request) {
       );
     }
 
+    /*
+     * If no row was updated, another request may
+     * have already sent the quote.
+     */
+    if (!updatedQuote) {
+      return NextResponse.redirect(
+        new URL(
+          `/admin/enquiries/${encodeURIComponent(
+            enquiryReference
+          )}?quoteError=alreadySent`,
+          request.url
+        )
+      );
+    }
+
+    /*
+     * Redirect back to the admin enquiry page.
+     */
     return NextResponse.redirect(
       new URL(
         `/admin/enquiries/${encodeURIComponent(
@@ -153,6 +194,87 @@ export async function POST(request: Request) {
       {
         error:
           "An unexpected error occurred while sending the quote.",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+}
+
+/*
+ * POST
+ *
+ * Normal method used by the Send Quote form.
+ */
+export async function POST(request: Request) {
+  try {
+    const formData = await request.formData();
+
+    const quoteId = String(
+      formData.get("quoteId") || ""
+    );
+
+    const enquiryReference = String(
+      formData.get("enquiryReference") || ""
+    );
+
+    return sendQuote(request, {
+      quoteId,
+      enquiryReference,
+    });
+  } catch (error) {
+    console.error(
+      "Quote send POST error:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "Unable to process the quote send request.",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+}
+
+/*
+ * GET
+ *
+ * Supported as a fallback so the endpoint does not
+ * return HTTP 405 if a browser/redirect reaches the
+ * endpoint using query parameters.
+ *
+ * Example:
+ * /api/admin/enquiries/quote/send?quoteId=...&enquiryReference=...
+ */
+export async function GET(request: Request) {
+  try {
+    const url = new URL(request.url);
+
+    const quoteId =
+      url.searchParams.get("quoteId") || "";
+
+    const enquiryReference =
+      url.searchParams.get("enquiryReference") || "";
+
+    return sendQuote(request, {
+      quoteId,
+      enquiryReference,
+    });
+  } catch (error) {
+    console.error(
+      "Quote send GET error:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "Unable to process the quote send request.",
       },
       {
         status: 500,
