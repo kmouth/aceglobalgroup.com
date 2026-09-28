@@ -1,54 +1,50 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const allowedActions = [
-  "accepted",
-  "declined",
-] as const;
-
-type QuoteResponse =
-  (typeof allowedActions)[number];
-
-function generateOrderReference() {
+function generateReference(prefix: string) {
   const year = new Date().getFullYear();
-  const random = Math.floor(
-    100000 + Math.random() * 900000
-  );
+  const random = Math.floor(100000 + Math.random() * 900000);
 
-  return `ACE-ORD-${year}-${random}`;
+  return `${prefix}-${year}-${random}`;
 }
 
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   try {
-    const formData = await request.formData();
+    const { searchParams } = new URL(request.url);
 
-    const quoteId = String(
-      formData.get("quoteId") || ""
+    const quoteReference = (
+      searchParams.get("quote") ||
+      searchParams.get("reference") ||
+      ""
     ).trim();
 
-    const action = String(
-      formData.get("action") || ""
-    ).trim() as QuoteResponse;
+    const action = (
+      searchParams.get("action") ||
+      ""
+    ).trim().toLowerCase();
 
-    if (
-      !quoteId ||
-      !allowedActions.includes(action)
-    ) {
+    if (!quoteReference || !action) {
       return NextResponse.json(
         {
-          error: "Invalid quote response.",
+          error:
+            "Quote reference and action are required.",
         },
+        { status: 400 }
+      );
+    }
+
+    if (action !== "accept" && action !== "decline") {
+      return NextResponse.json(
         {
-          status: 400,
-        }
+          error:
+            "Invalid action. Use accept or decline.",
+        },
+        { status: 400 }
       );
     }
 
     const supabase = createAdminClient();
 
-    /*
-     * Load the quote and the related enquiry/customer.
-     */
     const { data: quote, error: quoteError } =
       await supabase
         .from("quotes")
@@ -56,33 +52,28 @@ export async function POST(request: Request) {
           `
             id,
             reference,
+            enquiry_id,
             amount,
             currency,
-            status,
             valid_until,
-            enquiry_id,
-            enquiries (
-              id,
-              customer_id
-            )
+            status
           `
         )
-        .eq("id", quoteId)
+        .eq("reference", quoteReference)
         .maybeSingle();
 
     if (quoteError) {
       console.error(
-        "Quote response lookup failed:",
+        "Quote lookup error:",
         quoteError
       );
 
       return NextResponse.json(
         {
-          error: "Unable to find the quotation.",
+          error:
+            "Unable to load the quotation.",
         },
-        {
-          status: 500,
-        }
+        { status: 500 }
       );
     }
 
@@ -91,73 +82,59 @@ export async function POST(request: Request) {
         {
           error: "Quotation not found.",
         },
-        {
-          status: 404,
-        }
+        { status: 404 }
       );
     }
 
-    /*
-     * The customer can only respond to a quote
-     * that has been officially sent.
-     */
     if (quote.status !== "sent") {
       return NextResponse.redirect(
         new URL(
-          `/quote/${encodeURIComponent(
-            quote.id
-          )}`,
+          `/quote/${quote.reference}?response=already_processed`,
           request.url
         )
       );
     }
 
-    /*
-     * Prevent responses to expired quotations.
-     */
     if (
       quote.valid_until &&
-      new Date(
-        `${quote.valid_until}T23:59:59Z`
-      ) < new Date()
+      new Date(quote.valid_until).getTime() <
+        Date.now()
     ) {
       await supabase
         .from("quotes")
         .update({
           status: "expired",
         })
-        .eq("id", quote.id)
-        .eq("status", "sent");
+        .eq("id", quote.id);
+
+      await supabase
+        .from("enquiries")
+        .update({
+          status: "closed",
+        })
+        .eq("id", quote.enquiry_id);
 
       return NextResponse.redirect(
         new URL(
-          `/quote/${encodeURIComponent(
-            quote.id
-          )}`,
+          `/quote/${quote.reference}?response=expired`,
           request.url
         )
       );
     }
 
-    /*
-     * DECLINED
-     *
-     * No order is created when a customer declines.
-     */
-    if (action === "declined") {
-      const { error: updateQuoteError } =
+    if (action === "decline") {
+      const { error: quoteUpdateError } =
         await supabase
           .from("quotes")
           .update({
             status: "declined",
           })
-          .eq("id", quote.id)
-          .eq("status", "sent");
+          .eq("id", quote.id);
 
-      if (updateQuoteError) {
+      if (quoteUpdateError) {
         console.error(
-          "Quote decline update failed:",
-          updateQuoteError
+          "Quote decline update error:",
+          quoteUpdateError
         );
 
         return NextResponse.json(
@@ -165,9 +142,7 @@ export async function POST(request: Request) {
             error:
               "Unable to record the quotation response.",
           },
-          {
-            status: 500,
-          }
+          { status: 500 }
         );
       }
 
@@ -181,92 +156,30 @@ export async function POST(request: Request) {
 
       if (enquiryUpdateError) {
         console.error(
-          "Enquiry decline update failed:",
+          "Enquiry decline update error:",
           enquiryUpdateError
         );
       }
 
       return NextResponse.redirect(
         new URL(
-          `/quote/${encodeURIComponent(
-            quote.id
-          )}?response=declined`,
+          `/quote/${quote.reference}?response=declined`,
           request.url
         )
       );
     }
 
     /*
-     * ACCEPTED
+     * ACCEPT QUOTE
      *
-     * First check whether an order already exists.
-     * This makes the operation idempotent.
+     * First check whether an order already exists for
+     * this quote. The quote_id column has a unique
+     * partial index, so this also prevents duplicate
+     * orders from being created.
      */
-    const { data: existingOrder, error: existingOrderError } =
+    const { data: existingOrder, error: orderLookupError } =
       await supabase
         .from("orders")
-        .select(
-          "id, reference, status"
-        )
-        .eq("quote_id", quote.id)
-        .maybeSingle();
-
-    if (existingOrderError) {
-      console.error(
-        "Existing order lookup failed:",
-        existingOrderError
-      );
-
-      return NextResponse.json(
-        {
-          error:
-            "Unable to check the existing order.",
-        },
-        {
-          status: 500,
-        }
-      );
-    }
-
-    let order = existingOrder;
-
-    /*
-     * Create an order if this accepted quote
-     * does not already have one.
-     */
-    if (!order) {
-      const enquiry = Array.isArray(
-        quote.enquiries
-      )
-        ? quote.enquiries[0]
-        : quote.enquiries;
-
-      if (!enquiry?.customer_id) {
-        return NextResponse.json(
-          {
-            error:
-              "The quotation is missing its customer information.",
-          },
-          {
-            status: 500,
-          }
-        );
-      }
-
-      let orderReference =
-        generateOrderReference();
-
-      let orderInsert = await supabase
-        .from("orders")
-        .insert({
-          reference: orderReference,
-          customer_id: enquiry.customer_id,
-          enquiry_id: quote.enquiry_id,
-          quote_id: quote.id,
-          total_amount: quote.amount,
-          currency: quote.currency,
-          status: "pending",
-        })
         .select(
           `
             id,
@@ -274,99 +187,135 @@ export async function POST(request: Request) {
             status
           `
         )
-        .single();
+        .eq("quote_id", quote.id)
+        .maybeSingle();
 
-      /*
-       * If another request created the order at
-       * exactly the same time, the unique quote_id
-       * constraint protects us from creating a duplicate.
-       *
-       * Fetch the already-created order instead.
-       */
-      if (
-        orderInsert.error?.code === "23505"
-      ) {
-        const { data: concurrentOrder } =
-          await supabase
-            .from("orders")
-            .select(
-              "id, reference, status"
-            )
-            .eq("quote_id", quote.id)
-            .maybeSingle();
-
-        if (!concurrentOrder) {
-          console.error(
-            "Order creation conflict but existing order could not be found:",
-            orderInsert.error
-          );
-
-          return NextResponse.json(
-            {
-              error:
-                "Unable to create or locate the order.",
-            },
-            {
-              status: 500,
-            }
-          );
-        }
-
-        order = concurrentOrder;
-      } else {
-        if (orderInsert.error) {
-          console.error(
-            "Order creation failed:",
-            orderInsert.error
-          );
-
-          return NextResponse.json(
-            {
-              error:
-                "Unable to create the order.",
-            },
-            {
-              status: 500,
-            }
-          );
-        }
-
-        order = orderInsert.data;
-      }
-    }
-
-    /*
-     * Mark the quote as accepted.
-     */
-    const { error: updateQuoteError } =
-      await supabase
-        .from("quotes")
-        .update({
-          status: "accepted",
-        })
-        .eq("id", quote.id)
-        .eq("status", "sent");
-
-    if (updateQuoteError) {
+    if (orderLookupError) {
       console.error(
-        "Quote acceptance update failed:",
-        updateQuoteError
+        "Existing order lookup error:",
+        orderLookupError
       );
 
       return NextResponse.json(
         {
           error:
-            "The order was created, but the quotation could not be marked as accepted.",
+            "Unable to check the existing order.",
         },
-        {
-          status: 500,
-        }
+        { status: 500 }
       );
     }
 
+    let orderReference = existingOrder?.reference;
+
+    if (!existingOrder) {
+      orderReference = generateReference("ACE-ORD");
+
+      const { data: newOrder, error: orderError } =
+        await supabase
+          .from("orders")
+          .insert({
+            reference: orderReference,
+            customer_id: null,
+            enquiry_id: quote.enquiry_id,
+            quote_id: quote.id,
+            total_amount: quote.amount,
+            currency: quote.currency || "NGN",
+            status: "pending",
+          })
+          .select(
+            `
+              id,
+              reference,
+              status
+            `
+          )
+          .single();
+
+      if (orderError || !newOrder) {
+        console.error(
+          "Order creation error:",
+          orderError
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              "Unable to create the order.",
+          },
+          { status: 500 }
+        );
+      }
+
+      orderReference = newOrder.reference;
+    }
+
     /*
-     * Mark the enquiry as accepted.
+     * Get the customer through the enquiry so the
+     * order has the correct customer_id.
      */
+    const { data: enquiry, error: enquiryError } =
+      await supabase
+        .from("enquiries")
+        .select(
+          `
+            id,
+            customer_id
+          `
+        )
+        .eq("id", quote.enquiry_id)
+        .maybeSingle();
+
+    if (enquiryError) {
+      console.error(
+        "Enquiry lookup error:",
+        enquiryError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Unable to load the enquiry.",
+        },
+        { status: 500 }
+      );
+    }
+
+    if (enquiry?.customer_id) {
+      await supabase
+        .from("orders")
+        .update({
+          customer_id: enquiry.customer_id,
+        })
+        .eq("reference", orderReference);
+    }
+
+    /*
+     * Mark the quote as accepted and the enquiry as
+     * accepted.
+     */
+    const { error: quoteUpdateError } =
+      await supabase
+        .from("quotes")
+        .update({
+          status: "accepted",
+        })
+        .eq("id", quote.id);
+
+    if (quoteUpdateError) {
+      console.error(
+        "Quote acceptance update error:",
+        quoteUpdateError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Unable to record the quotation acceptance.",
+        },
+        { status: 500 }
+      );
+    }
+
     const { error: enquiryUpdateError } =
       await supabase
         .from("enquiries")
@@ -377,39 +326,36 @@ export async function POST(request: Request) {
 
     if (enquiryUpdateError) {
       console.error(
-        "Enquiry acceptance update failed:",
+        "Enquiry acceptance update error:",
         enquiryUpdateError
       );
     }
 
     /*
-     * Send the customer back to the quotation
-     * confirmation page with the order reference.
+     * IMPORTANT:
+     *
+     * Instead of returning the customer to the quote
+     * page, send them directly to the order/payment
+     * page after accepting the quotation.
      */
     return NextResponse.redirect(
       new URL(
-        `/quote/${encodeURIComponent(
-          quote.id
-        )}?response=accepted&order=${encodeURIComponent(
-          order.reference
-        )}`,
+        `/order/${orderReference}`,
         request.url
       )
     );
   } catch (error) {
     console.error(
-      "Unexpected quote response error:",
+      "Quote response error:",
       error
     );
 
     return NextResponse.json(
       {
         error:
-          "An unexpected error occurred while processing the quotation response.",
+          "Unable to process the quotation response.",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }
