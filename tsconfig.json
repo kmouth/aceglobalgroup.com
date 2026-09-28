@@ -17,8 +17,6 @@
 
     "incremental": true,
 
-    "baseUrl": ".",
-
     "paths": {
       "@/*": ["./*"]
     },
@@ -27,8 +25,7 @@
       {
         "name": "next"
       }
-    ],
-    
+    ]
   },
 
   "include": [

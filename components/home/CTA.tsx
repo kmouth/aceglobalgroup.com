@@ -2,7 +2,11 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Handshake } from "lucide-react";
+import {
+  ArrowRight,
+  Handshake,
+  CreditCard,
+} from "lucide-react";
 
 import Container from "@/components/ui/Container";
 
@@ -12,7 +16,10 @@ export default function CTA() {
       {/* Background Accent */}
       <div className="absolute inset-0">
         <div className="absolute left-0 top-0 h-96 w-96 rounded-full bg-emerald-500/20 blur-3xl" />
+
         <div className="absolute bottom-0 right-0 h-[420px] w-[420px] rounded-full bg-emerald-400/10 blur-3xl" />
+
+        <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-yellow-500/5 blur-3xl" />
       </div>
 
       <Container>
@@ -32,29 +39,44 @@ export default function CTA() {
           </h2>
 
           <p className="mx-auto mt-8 max-w-3xl text-lg leading-9 text-slate-300">
-            Whether you're looking to invest, partner, or explore new
-            opportunities, ACE Global Group is ready to build meaningful
-            relationships that create sustainable value for businesses,
-            communities and future generations.
+            Whether you're looking to invest, partner, explore new
+            opportunities, or engage with our growing business ecosystem, ACE
+            Global Group is ready to build meaningful relationships that create
+            sustainable value for businesses, communities and future
+            generations.
           </p>
 
           <div className="mt-12 flex flex-wrap justify-center gap-5">
+            {/* Primary CTA */}
             <Link
               href="/contact"
-              className="inline-flex items-center rounded-xl bg-emerald-600 px-8 py-4 text-lg font-semibold transition-all duration-300 hover:bg-emerald-700"
+              className="inline-flex items-center rounded-xl bg-emerald-600 px-8 py-4 text-lg font-semibold transition-all duration-300 hover:-translate-y-1 hover:bg-emerald-700"
             >
               Partner With ACE
-
               <ArrowRight className="ml-3 h-5 w-5" />
             </Link>
 
+            {/* Learn More */}
             <Link
               href="/about"
               className="inline-flex items-center rounded-xl border border-white/20 px-8 py-4 text-lg font-semibold transition-all duration-300 hover:bg-white hover:text-slate-900"
             >
               Learn More About Us
             </Link>
+
+            {/* Payment CTA */}
+            <Link
+              href="/payment"
+              className="inline-flex items-center rounded-xl bg-yellow-500 px-8 py-4 text-lg font-semibold text-slate-900 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-yellow-400"
+            >
+              <CreditCard className="mr-3 h-5 w-5" />
+              Make a Payment
+            </Link>
           </div>
+
+          <p className="mt-8 text-sm text-slate-400">
+            Secure payments are processed through Paystack.
+          </p>
         </motion.div>
       </Container>
     </section>
