@@ -30,6 +30,7 @@ type CountryRequirement = {
 
 type Application = {
   id: string;
+  vendor_id: string;
   application_reference: string;
   status: string;
   submitted_at: string | null;
@@ -209,6 +210,7 @@ export default function VendorApplicationForm({
 
   const uploadDocument = async (
     vendorId: string,
+    userId: string,
     file: File,
     documentType: string
   ) => {
@@ -259,47 +261,52 @@ export default function VendorApplicationForm({
         throw new Error("Your session has expired. Please sign in again.");
       }
 
-      const { data: applicationData, error: onboardingError } =
-        await supabase.rpc("start_vendor_onboarding", {
-          p_business_name: form.businessName,
-          p_owner_full_name: form.ownerFullName,
-          p_business_type: form.businessType,
-          p_phone: form.phone,
-          p_email: form.email,
-          p_business_address: form.address,
-          p_city: form.city,
-          p_state: form.state,
-          p_country: form.country,
-          p_verification_route: form.route,
-          p_business_registration_authority:
-            selectedCountry?.business_registration_authority ?? null,
-          p_business_registration_number:
-            form.route === "business_registration"
-              ? form.registrationNumber
-              : null,
-          p_business_registration_status:
-            form.route === "business_registration"
-              ? "registered"
-              : "not_registered",
-        });
+      let createdApplication = application;
 
-      if (onboardingError || !applicationData) {
-        throw new Error(
-          onboardingError?.message || "Could not start your vendor application."
-        );
+      if (!createdApplication) {
+        const { data: applicationData, error: onboardingError } =
+          await supabase.rpc("start_vendor_onboarding", {
+            p_business_name: form.businessName,
+            p_owner_full_name: form.ownerFullName,
+            p_business_type: form.businessType,
+            p_phone: form.phone,
+            p_email: form.email,
+            p_business_address: form.address,
+            p_city: form.city,
+            p_state: form.state,
+            p_country: form.country,
+            p_verification_route: form.route,
+            p_business_registration_authority:
+              selectedCountry?.business_registration_authority ?? null,
+            p_business_registration_number:
+              form.route === "business_registration"
+                ? form.registrationNumber
+                : null,
+            p_business_registration_status:
+              form.route === "business_registration"
+                ? "registered"
+                : "not_registered",
+          });
+
+        if (onboardingError || !applicationData) {
+          throw new Error(
+            onboardingError?.message || "Could not start your vendor application."
+          );
+        }
+
+        createdApplication = Array.isArray(applicationData)
+          ? applicationData[0]
+          : applicationData;
       }
 
-      const createdApplication = Array.isArray(applicationData)
-        ? applicationData[0]
-        : applicationData;
-
       if (!createdApplication?.vendor_id || !createdApplication?.id) {
-        throw new Error("Vendor application was created without an identifier.");
+        throw new Error("Vendor application is missing its identifier.");
       }
 
       if (identityFile) {
         await uploadDocument(
           createdApplication.vendor_id,
+          userId,
           identityFile,
           "identity_document"
         );
@@ -308,6 +315,7 @@ export default function VendorApplicationForm({
       if (registrationFile && requiresRegistration) {
         await uploadDocument(
           createdApplication.vendor_id,
+          userId,
           registrationFile,
           "business_registration_certificate"
         );
@@ -316,6 +324,7 @@ export default function VendorApplicationForm({
       if (addressFile && requiresAddress) {
         await uploadDocument(
           createdApplication.vendor_id,
+          userId,
           addressFile,
           "utility_bill"
         );
@@ -326,7 +335,7 @@ export default function VendorApplicationForm({
         .update({ status: "submitted" })
         .eq("id", createdApplication.id)
         .select(
-          "id, application_reference, status, submitted_at, decision_notes, country_code, verification_route"
+          "id, vendor_id, application_reference, status, submitted_at, decision_notes, country_code, verification_route"
         )
         .single();
 
