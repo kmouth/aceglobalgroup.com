@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   ClipboardList,
@@ -14,14 +13,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const authClient = await createClient();
-
-  const { data } = await authClient.auth.getClaims();
-  const claims = data?.claims ?? null;
-
-  if (!claims) {
-    redirect("/login");
-  }
+  await requireAdmin();
 
   const supabase = createAdminClient();
 
@@ -244,13 +236,14 @@ export default async function AdminPage() {
                     </div>
 
                     <div className="text-sm text-slate-500 md:text-right">
-                      {new Date(
-                        enquiry.created_at
-                      ).toLocaleDateString("en-NG", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      {new Date(enquiry.created_at).toLocaleDateString(
+                        "en-NG",
+                        {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        }
+                      )}
                     </div>
                   </div>
                 );
