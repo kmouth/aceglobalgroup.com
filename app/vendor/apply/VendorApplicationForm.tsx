@@ -213,7 +213,7 @@ export default function VendorApplicationForm({
     documentType: string
   ) => {
     const extension = file.name.split(".").pop()?.toLowerCase() || "bin";
-    const path = `${vendorId}/${documentType}-${crypto.randomUUID()}.${extension}`;
+    // Storage RLS scopes vendor files to the authenticated user folder.\n    // The database vendor_id remains the ownership reference for the document row.\n    const path = `${userId}/${documentType}-${crypto.randomUUID()}.${extension}`;
 
     const { error: uploadError } = await supabase.storage
       .from("vendor-documents")
