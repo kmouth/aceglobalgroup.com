@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import {
   ArrowRight,
   ClipboardList,
   Search,
 } from "lucide-react";
 
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -32,14 +31,7 @@ export default async function AdminEnquiriesPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const authClient = await createClient();
-
-  const { data } = await authClient.auth.getClaims();
-  const claims = data?.claims ?? null;
-
-  if (!claims) {
-    redirect("/login");
-  }
+  await requireAdmin();
 
   const params = await searchParams;
 
@@ -81,42 +73,35 @@ export default async function AdminEnquiriesPage({
   const { data: enquiries, error } = await query;
 
   if (error) {
-    console.error(
-      "Admin enquiries query failed:",
-      error
-    );
+    console.error("Admin enquiries query failed:", error);
   }
 
-  const filteredEnquiries = (enquiries ?? []).filter(
-    (enquiry) => {
-      if (!search) {
-        return true;
-      }
-
-      const customer = Array.isArray(enquiry.customers)
-        ? enquiry.customers[0]
-        : enquiry.customers;
-
-      const searchableText = [
-        enquiry.reference,
-        enquiry.service,
-        enquiry.status,
-        enquiry.cargo_product,
-        enquiry.pickup_location,
-        enquiry.delivery_location,
-        customer?.full_name,
-        customer?.company_name,
-        customer?.email,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return searchableText.includes(
-        search.toLowerCase()
-      );
+  const filteredEnquiries = (enquiries ?? []).filter((enquiry) => {
+    if (!search) {
+      return true;
     }
-  );
+
+    const customer = Array.isArray(enquiry.customers)
+      ? enquiry.customers[0]
+      : enquiry.customers;
+
+    const searchableText = [
+      enquiry.reference,
+      enquiry.service,
+      enquiry.status,
+      enquiry.cargo_product,
+      enquiry.pickup_location,
+      enquiry.delivery_location,
+      customer?.full_name,
+      customer?.company_name,
+      customer?.email,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    return searchableText.includes(search.toLowerCase());
+  });
 
   return (
     <main className="min-h-screen bg-[#f7f8f4]">
@@ -186,14 +171,10 @@ export default async function AdminEnquiriesPage({
               className="rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
             >
               {statuses.map((item) => (
-                <option
-                  key={item}
-                  value={item}
-                >
+                <option key={item} value={item}>
                   {item === "all"
                     ? "All Statuses"
-                    : item.charAt(0).toUpperCase() +
-                      item.slice(1)}
+                    : item.charAt(0).toUpperCase() + item.slice(1)}
                 </option>
               ))}
             </select>
@@ -292,8 +273,7 @@ export default async function AdminEnquiriesPage({
 
                         <div className="mt-3">
                           <p className="font-semibold text-slate-800">
-                            {customer?.full_name ||
-                              "Unknown Customer"}
+                            {customer?.full_name || "Unknown Customer"}
                           </p>
 
                           {customer?.company_name && (
@@ -310,13 +290,14 @@ export default async function AdminEnquiriesPage({
                         </span>
 
                         <span className="text-slate-500">
-                          {new Date(
-                            enquiry.created_at
-                          ).toLocaleDateString("en-NG", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
+                          {new Date(enquiry.created_at).toLocaleDateString(
+                            "en-NG",
+                            {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            }
+                          )}
                         </span>
 
                         <span className="inline-flex items-center font-semibold text-emerald-700 transition group-hover:text-emerald-800">
