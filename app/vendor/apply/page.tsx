@@ -1,3 +1,4 @@
+
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import VendorApplicationForm from "./VendorApplicationForm";
@@ -32,15 +33,21 @@ export default async function VendorApplyPage() {
 
   const [{ data: role }, { data: application }, { data: countries }] =
     await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", userId).single(),
+      supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .single(),
+
       supabase
         .from("vendor_applications")
         .select(
-          "id, application_reference, status, submitted_at, decision_notes, country_code, verification_route"
+          "id, vendor_id, application_reference, status, submitted_at, decision_notes, country_code, verification_route"
         )
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+
       supabase
         .from("vendor_country_requirements")
         .select(
@@ -55,7 +62,9 @@ export default async function VendorApplyPage() {
   }
 
   const email =
-    typeof claimsData.claims.email === "string" ? claimsData.claims.email : "";
+    typeof claimsData.claims.email === "string"
+      ? claimsData.claims.email
+      : "";
 
   return (
     <VendorApplicationForm
